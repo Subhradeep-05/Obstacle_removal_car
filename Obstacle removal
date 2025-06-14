@@ -1,0 +1,131 @@
+#include <Servo.h>
+
+// Motor pins
+const int in1 = 7;
+const int in2 = 6;
+const int in3 = 5;
+const int in4 = 4;
+
+// Ultrasonic sensor pins
+const int trigPin = 9;
+const int echoPin = 8;
+
+// Servo pin
+Servo armServo;
+const int servoPin = 10;
+
+// Bluetooth command
+char command;
+
+void setup() {
+  Serial.begin(9600);
+
+  // Motor pin modes
+  pinMode(in1, OUTPUT);
+  pinMode(in2, OUTPUT);
+  pinMode(in3, OUTPUT);
+  pinMode(in4, OUTPUT);
+
+  // Ultrasonic sensor
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+
+  // Attach servo
+  armServo.attach(servoPin);
+  armServo.write(90);  // Neutral position
+}
+
+void loop() {
+  if (Serial.available() > 0) {
+    command = Serial.read();
+    Serial.println(command);
+
+    switch (command) {
+      case 'F':
+        forward();
+        break;
+      case 'B':
+        backward();
+        break;
+      case 'L':
+        left();
+        break;
+      case 'R':
+        right();
+        break;
+      case 'S':
+        stopMotors();
+        break;
+      case 'O':
+        removeObstacle();
+        break;
+    }
+  }
+}
+
+// Movement functions
+void forward() {
+  digitalWrite(in1, HIGH);
+  digitalWrite(in2, LOW);
+  digitalWrite(in3, HIGH);
+  digitalWrite(in4, LOW);
+}
+
+void backward() {
+  digitalWrite(in1, LOW);
+  digitalWrite(in2, HIGH);
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, HIGH);
+}
+
+void left() {
+  digitalWrite(in1, LOW);
+  digitalWrite(in2, HIGH);
+  digitalWrite(in3, HIGH);
+  digitalWrite(in4, LOW);
+}
+
+void right() {
+  digitalWrite(in1, HIGH);
+  digitalWrite(in2, LOW);
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, HIGH);
+}
+
+void stopMotors() {
+  digitalWrite(in1, LOW);
+  digitalWrite(in2, LOW);
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, LOW);
+}
+
+// Obstacle detection and removal
+void removeObstacle() {
+  long duration;
+  int distance;
+
+  // Send ultrasonic pulse
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  // Read distance
+  duration = pulseIn(echoPin, HIGH);
+  distance = duration * 0.034 / 2;
+
+  if (distance <= 15) { // obstacle detected
+    stopMotors();
+    Serial.println("Obstacle detected!");
+
+    // Move servo arm to clear path
+    armServo.write(0);
+    delay(1000);
+    armServo.write(180);
+    delay(1000);
+    armServo.write(90); // reset position
+  } else {
+    Serial.println("No obstacle.");
+  }
+}
